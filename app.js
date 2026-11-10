@@ -1,5 +1,9 @@
 /* CrowdFix civic reporting demo. No API key is shipped to the browser. */
 const STORAGE_KEY = 'crowdfix-demo-v2';
+const GNANI_BACKEND_ORIGIN = 'https://crowdfix-dehradun.workspace-027574.chatgpt.site';
+const gnaniApiUrl = (path) => location.hostname === 'rakshansharma27.github.io'
+  ? `${GNANI_BACKEND_ORIGIN}${path}`
+  : path;
 const DEHRADUN = [30.3256, 78.0437];
 const CATEGORY_META = {
   'ROAD SAFETY': { icon: '⚠', cls: 'road' },
@@ -494,7 +498,7 @@ async function transcribeWithGnani(audioBlob) {
   try {
     const form = new FormData();
     form.append('audio_file', audioBlob, 'crowdfix-report.wav');
-    const response = await fetch('/api/transcribe', { method: 'POST', body: form, cache: 'no-store' });
+    const response = await fetch(gnaniApiUrl('/api/transcribe'), { method: 'POST', body: form, cache: 'no-store' });
     const result = await response.json().catch(() => ({}));
     if (!response.ok || !result.success) throw new Error(result.message || `Gnani request failed (${response.status}).`);
     const transcript = String(result.transcript || '').trim();
@@ -516,7 +520,7 @@ async function transcribeWithGnani(audioBlob) {
 }
 async function checkGnaniStatus() {
   try {
-    const response = await fetch('/api/health', { cache: 'no-store' });
+    const response = await fetch(gnaniApiUrl('/api/health'), { cache: 'no-store' });
     const data = await response.json();
     gnaniApiReady = response.ok && data.configured === true;
     if (gnaniApiReady) {
