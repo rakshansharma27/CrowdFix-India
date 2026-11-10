@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#131122">
+  <meta name="description" content="CrowdFix helps Dehradun residents report civic issues and helps Nagar Nigam teams coordinate a response.">
+  <title>CrowdFix — Dehradun Civic Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="tricolor-ribbon" aria-hidden="true"></div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand-lockup">
+        <div class="brand-mark"><span>CF</span><i>✦</i></div>
+        <div><div class="brand-name">CrowdFix <span>भारत</span></div><div class="brand-caption">NAGAR NIGAM DEHRADUN · DPI</div></div>
+      </div>
+      <div class="sidebar-section-label">CITIZEN DESK</div>
+      <nav class="sidebar-nav" id="sidebarNav" aria-label="Main navigation">
+        <button class="nav-item active" data-view="overview"><span class="nav-icon">⌂</span><span>Overview</span><span class="nav-arrow">›</span></button>
+        <button class="nav-item" data-view="reports"><span class="nav-icon">▤</span><span>Live Reports</span><span class="nav-count" id="sidebarReportCount">0</span></button>
+        <button class="nav-item" data-view="clusters"><span class="nav-icon">◎</span><span>Issue Clusters</span><span class="nav-count" id="sidebarClusterCount">0</span></button>
+        <button class="nav-item" data-view="resolved"><span class="nav-icon">✓</span><span>Resolved</span><span class="nav-count" id="sidebarResolvedCount">0</span></button>
+      </nav>
+      <div class="sidebar-rule"></div>
+      <div class="sidebar-foot-label">YOUR DEHRADUN</div>
+      <div class="ward-card"><span class="ward-pin">⌖</span><div><strong>Dehradun</strong><small>Uttarakhand · India</small></div><span class="ward-live"></span></div>
+      <div class="sidebar-spacer"></div>
+      <div class="sidebar-tip"><span>✦</span><div><strong>Every voice counts</strong><small>Nearby reports build a clearer picture for civic teams.</small></div></div>
+      <button class="profile-trigger" id="profileTrigger">
+        <span class="avatar avatar-sidebar" id="sidebarAvatar">RS</span><span class="profile-summary"><strong id="sidebarUserName">Demo Guest</strong><small id="sidebarUserRole">Read only</small></span><span class="profile-more">···</span>
+      </button>
+      <div class="role-sr-only"><span id="sidebarRoleTitle">Resident Mode</span><span id="sidebarRoleDesc">File a report and add your voice.</span></div>
+    </aside>
+    <button class="sidebar-overlay" id="sidebarOverlay" aria-label="Close navigation"></button>
+
+    <main class="main-area">
+      <header class="topbar">
+        <button class="icon-button hamburger" id="hamburgerBtn" aria-label="Open navigation">☰</button>
+        <div class="topbar-context"><div class="eyebrow" id="topbarDate"></div><h1 id="topbarGreeting">Good afternoon</h1></div>
+        <div class="topbar-actions">
+          <div class="location-pill"><span class="location-dot">●</span><span id="locationPillText">Dehradun, Uttarakhand</span><span class="chevron">⌄</span></div>
+          <span class="live-label"><i></i> LIVE</span>
+          <button class="icon-button notification-button" id="pushNotificationBtn" aria-label="Notifications">♧<b class="notification-dot"></b></button>
+          <button class="help-button" id="helpButton" aria-label="Help">?</button>
+          <button class="avatar avatar-top" id="topbarAvatar" aria-label="Open profile">DG</button>
+          <button class="text-button" id="topbarSignInBtn">Sign in</button>
+        </div>
+      </header>
+
+      <div class="page-wrap">
+        <section class="page-view active" id="overviewView" data-page="overview">
+          <div class="hero-card">
+            <div class="hero-copy">
+              <div class="hero-kicker"><span class="hero-kicker-dot"></span> A clearer city starts with you</div>
+              <h2>Small voices.<br><em>Visible change.</em></h2>
+              <p>Spot a pothole, overflowing bin, or dark street? Tell us in the language that feels natural. Your neighbours can add their voice.</p>
+              <div class="hero-actions"><button class="button button-primary" id="heroReportBtn"><span>＋</span> Report an issue</button><button class="button button-quiet" id="quickVoiceDemoBtn"><span class="play-icon">▶</span> Quick voice demo</button></div>
+              <div class="hero-meta"><span class="avatar-stack"><i>RS</i><i>AP</i><i>KM</i></span><span><b id="heroReportCount">24</b> community voices this week</span></div>
+            </div>
+            <div class="hero-art" aria-hidden="true"><div class="sun-orb"></div><div class="hero-mountain mountain-back"></div><div class="hero-mountain mountain-front"></div><div class="hero-road"></div><div class="hero-house house-one"></div><div class="hero-house house-two"></div><div class="hero-tree tree-one">♣</div><div class="hero-tree tree-two">♣</div><div class="hero-pin"><span>●</span><small>DEHRADUN</small></div><div class="hero-art-caption"><span class="tiny-flag">🇮🇳</span> Built for the people of Dehradun</div></div>
+          </div>
+
+          <section class="telemetry-card speechmatics-hud" aria-label="Speech pipeline status">
+            <div class="telemetry-brand"><span class="sound-mark">◖</span><div><strong>Voice intelligence</strong><small>Indic language support</small></div></div>
+            <div class="telemetry-divider"></div>
+            <div class="telemetry-metric"><span>PIPELINE</span><strong id="hudStatus">Demo fallback <i class="pulse-dot"></i></strong></div>
+            <div class="telemetry-metric"><span>LANGUAGE</span><strong id="hudLanguage">Auto detect</strong></div>
+            <div class="telemetry-metric"><span>LATENCY</span><strong id="hudLatency">—</strong></div>
+            <div class="telemetry-metric"><span>CONFIDENCE</span><strong id="hudConfidence">—</strong></div>
+            <div class="telemetry-stream"><span class="stream-led"></span><span id="hudInterimText">Hindi · Hinglish · English and more</span></div>
+            <div class="telemetry-note" id="telemetryNote">Checking secure Gnani AI connection…</div>
+          </section>
+
+          <div class="section-heading stats-heading"><div><div class="section-kicker">CITY PULSE</div><h2>Dehradun at a glance</h2></div><button class="subtle-link" id="overviewRefreshBtn">Updated just now <span>↻</span></button></div>
+          <div class="stats-grid">
+            <article class="stat-card"><div class="stat-icon stat-orange">◉</div><div class="stat-label">Community voices</div><div class="stat-value" id="statTotalReports">24</div><div class="stat-foot"><span class="trend-up">↗</span> Reports &amp; confirmations</div><div class="stat-spark spark-orange"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
+            <article class="stat-card"><div class="stat-icon stat-blue">◎</div><div class="stat-label">Active issue clusters</div><div class="stat-value" id="statActiveClusters">3</div><div class="stat-foot"><span class="status-dot status-amber"></span> Across 3 neighbourhoods</div><div class="stat-spark spark-blue"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
+            <article class="stat-card"><div class="stat-icon stat-green">✓</div><div class="stat-label">Resolution rate</div><div class="stat-value"><span id="statResolvedRate">25</span><small>%</small></div><div class="stat-foot"><span class="trend-up">↗</span> 1 issue resolved</div><div class="stat-spark spark-green"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="panel priority-panel"><div class="panel-heading"><div><div class="section-kicker">NEEDS ATTENTION</div><h2>Priority queue</h2></div><button class="dots-button" aria-label="More options">···</button></div><div class="priority-list" id="priorityQueue"></div><button class="panel-link" data-goto="clusters">View all issue clusters <span>→</span></button></section>
+            <section class="panel map-panel"><div class="panel-heading"><div><div class="section-kicker">COMMUNITY MAP</div><h2>Issues near you</h2></div><div class="map-tools"><button class="map-tool active" id="toggleMarkersBtn" aria-label="Show markers">•</button><button class="map-tool" id="toggleHeatmapBtn" aria-label="Toggle heatmap">▧</button><button class="map-tool" id="recenterMapBtn" aria-label="Recenter map">⌖</button></div></div><div id="osmMap" class="map-canvas" role="img" aria-label="Map of Dehradun civic issues"></div><div class="map-legend"><span><i class="legend-orange"></i> High priority</span><span><i class="legend-blue"></i> In progress</span><span class="map-privacy">⌖ Approximate neighbourhood locations</span></div></section>
+          </div>
+          <section class="community-banner"><span class="banner-icon">✳</span><div><strong>One report can lead to many voices.</strong><small>Confirm an issue you have seen and help civic teams understand its impact.</small></div><button class="button button-outline" data-goto="clusters">Explore nearby issues <span>→</span></button></section>
+        </section>
+
+        <section class="page-view" id="reportsView" data-page="reports">
+          <div class="page-title-row"><div><div class="section-kicker">COMMUNITY EVIDENCE</div><h2>Live reports</h2><p>Individual testimonies grouped by the issue they describe.</p></div><button class="button button-primary" id="feedReportBtn">＋ Report an issue</button></div>
+          <div class="filter-bar"><label class="search-field"><span>⌕</span><input id="feedSearchInput" type="search" placeholder="Search reports, places or words…"></label><select id="categoryFilter" aria-label="Filter by category"><option value="all">All categories</option><option>ROAD SAFETY</option><option>CLEANLINESS</option><option>PUBLIC LIGHTING</option><option>WATER &amp; SEWAGE</option><option>TRAFFIC &amp; TRANSIT</option></select><select id="feedTagFilter" aria-label="Filter by status"><option value="all">All statuses</option><option value="open">Open</option><option value="in_progress">In progress</option><option value="resolved">Resolved</option></select></div>
+          <div class="feed-list" id="liveReportsFeed"></div>
+        </section>
+
+        <section class="page-view" id="clustersView" data-page="clusters">
+          <div class="page-title-row"><div><div class="section-kicker">DUPLICATES, CONNECTED</div><h2>Issue clusters</h2><p>Related reports are grouped to show where community pressure is building.</p></div><div class="view-filter-pill">⌖ <span>Dehradun</span> <span>⌄</span></div></div>
+          <div class="cluster-summary"><div><strong id="clusterSummaryCount">3</strong><span>active clusters</span></div><div><strong id="clusterSummaryVoices">23</strong><span>voices connected</span></div><div><strong>3</strong><span>neighbourhoods</span></div><div class="cluster-summary-note"><i></i> Live community activity</div></div>
+          <div class="cluster-grid" id="clustersGrid"></div>
+        </section>
+
+        <section class="page-view" id="resolvedView" data-page="resolved">
+          <div class="page-title-row"><div><div class="section-kicker">CLOSED WITH CARE</div><h2>Resolved archive</h2><p>Completed work and official notes from civic teams.</p></div><div class="archive-count"><span class="archive-check">✓</span> <b id="resolvedTotal">1</b> resolved</div></div>
+          <div class="resolved-list" id="resolvedList"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Sign-in / demo persona modal -->
+  <div class="modal-backdrop" id="authModal" aria-hidden="true"><section class="dialog auth-dialog" role="dialog" aria-modal="true" aria-labelledby="authTitle"><button class="close-button" data-close="authModal" aria-label="Close">×</button><div class="dialog-mark">🇮🇳</div><div class="section-kicker" id="authEyebrow">YOUR CIVIC IDENTITY</div><h2 id="authTitle">Make your voice count</h2><p id="authSubtitle">Choose a demo profile to continue. No password needed.</p><div class="persona-grid"><button class="persona-card" id="btnDemoLoginResident" data-account-id="resident-rakshan"><span class="persona-avatar persona-resident">RD</span><span><strong>Riya Demo</strong><small>Resident · Rajpur Road</small></span><span class="persona-arrow">→</span></button><button class="persona-card" id="btnDemoLoginOfficer" data-account-id="resident-arav"><span class="persona-avatar persona-officer">AD</span><span><strong>Aman Demo</strong><small>Public Service Officer</small></span><span class="persona-arrow">→</span></button></div><button class="guest-button" id="continueAsGuestBtn">👀 Continue as Demo Guest <span>Read only</span></button><div class="auth-footnote">Demo accounts are for exploring the prototype only.</div>
+    <form id="authForm" class="hidden-compat"><input id="authName"><input id="authEmail"><input id="authPassword"><input id="locationConsent" type="checkbox"><button id="clerkGoogleBtn" type="button"></button><span id="pocketbaseStatusTag"></span></form>
+  </section></div>
+
+  <!-- Profile / account switcher -->
+  <div class="modal-backdrop" id="profileModal" aria-hidden="true"><section class="dialog profile-dialog" role="dialog" aria-modal="true" aria-label="Civic identity"><button class="close-button" data-close="profileModal" aria-label="Close">×</button><div class="profile-head"><div class="profile-avatar-large" id="modalAvatarLarge">DG</div><div><div class="section-kicker">CIVIC IDENTITY</div><h2 id="modalUserName">Demo Guest</h2><p id="modalUserEmail">Read-only preview</p><span class="role-pill" id="modalRoleBadge">Demo guest</span></div></div><div class="profile-section-title">SWITCH DEMO ACCOUNT</div><div class="account-list" id="realAccountsGrid"><button class="account-row" data-account-id="resident-rakshan"><span class="persona-avatar persona-resident">RD</span><span><strong>Riya Demo</strong><small>Resident</small></span><span class="account-check">○</span></button><button class="account-row" data-account-id="resident-arav"><span class="persona-avatar persona-officer">AD</span><span><strong>Aman Demo</strong><small>Public Service Officer</small></span><span class="account-check">○</span></button><button class="account-row hidden-compat" data-account-id="officer-snehal"><span>S</span><span><strong>Compatibility profile</strong></span></button></div><div class="profile-actions"><button class="button button-outline" id="btnSwitchResident">Switch to resident</button><button class="button button-outline" id="btnSwitchOfficer">Switch to officer</button></div><button class="profile-text-action" id="btnResetDemoData">↻ Reset demo data</button><button class="profile-text-action danger-text" id="btnSignOut">Sign out</button></section></div>
+
+  <!-- New report -->
+  <div class="modal-backdrop" id="reportModal" aria-hidden="true"><section class="dialog report-dialog" role="dialog" aria-modal="true" aria-labelledby="reportModalTitle"><button class="close-button" data-close="reportModal" aria-label="Close">×</button><div class="report-dialog-head"><div><div class="section-kicker">CIVIC ISSUE REPORT</div><h2 id="reportModalTitle">What needs fixing?</h2><p>Speak or write in Hindi, Hinglish, or English.</p></div><div class="report-mini-hud"><span class="mini-led"></span><span id="reportHudStatus">Demo fallback ready</span></div></div>
+    <div class="voice-panel"><button class="record-button" id="recordButton" aria-label="Start recording"><span id="recordButtonIcon">🎙</span><span class="record-rings"><i></i><i></i><i></i></span></button><div class="voice-panel-copy"><strong id="recordTitle">Tap to record</strong><span id="recordHint">Record up to 25 seconds; Gnani Prisma v3.0 will transcribe it.</span><div class="sound-bars" id="soundWaveBars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div><button class="button button-small button-light" id="stopRecordingBtn" disabled>Finish</button></div>
+    <div class="voice-hint"><span>✦</span> Live recordings are sent to Gnani AI over HTTPS for transcription. Test prompts use a clearly labelled local demo stream.</div>
+    <div class="prompt-header"><span>⚡ 1-tap Indic test prompts</span><small>Choose a sample to preview</small></div><div class="prompt-grid" id="promptGrid"></div>
+    <label class="field-label" for="reportText">TRANSCRIPT / DESCRIPTION</label><textarea id="reportText" rows="3" placeholder="Describe the issue and a nearby landmark…"></textarea>
+    <div class="parser-preview" id="parserPreview"><div class="preview-header"><span class="preview-spark">✧</span><div><strong>Civic evidence preview</strong><small>Local heuristic extraction</small></div><span class="preview-live">LIVE</span></div><div class="preview-pills"><div><small>CATEGORY</small><b id="previewCategory">Awaiting text</b></div><div><small>LANDMARK</small><b id="previewLandmark">—</b></div><div><small>SEVERITY</small><b id="previewSeverity">—</b></div><div><small>SPAM RISK</small><b id="previewSpam">—</b></div></div><div class="cluster-prediction"><span>◎</span><span id="previewClusteringReason">Add a description to check for a related issue.</span></div></div>
+    <div class="privacy-note"><span>♧</span><div><strong>Your exact location stays private.</strong><small>CrowdFix sends the audio clip to Gnani for transcription and does not retain the clip. Reports use a neighbourhood landmark; urgent escalation needs officer confirmation or 3+ resident voices.</small></div></div>
+    <div class="report-footer"><span class="report-status" id="transcriptState">Ready when you are</span><button class="button button-primary" id="submitReport" disabled>Submit report <span>→</span></button></div>
+  </section></div>
+
+  <!-- Issue detail -->
+  <div class="modal-backdrop" id="issueDetailModal" aria-hidden="true"><section class="dialog detail-dialog" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><button class="close-button" data-close="issueDetailModal" aria-label="Close">×</button><div id="detailContent"></div></section></div>
+
+  <!-- Hidden compatibility settings fields retained for local integration work. -->
+  <div class="modal-backdrop hidden-compat" id="speechmaticsModal" aria-hidden="true"><input id="speechmaticsApiKeyInput"><button id="btnOpenSpeechmaticsConfig"></button><button id="btnSaveSpeechmaticsConfig"></button><select id="speechmaticsModelSelect"><option>enhanced</option></select><select id="speechmaticsLangSelect"><option>en</option></select></div>
+  <span class="hidden-compat" id="transcriptConfidence"></span>
+
+  <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
