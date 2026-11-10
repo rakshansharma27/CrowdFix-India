@@ -14,32 +14,54 @@ for (const [route, file, contentType] of files) assets[route] = { contentType, b
 
 const worker = `const ASSETS = ${JSON.stringify(assets)};
 const API_URL = "https://api.vachana.ai/stt/v3";
+const CORS_ORIGINS = new Set(["https://rakshansharma27.github.io"]);
 const MAX_AUDIO_BYTES = 8 * 1024 * 1024;
 const KEYTERMS = ["Dehradun", "Rajpur Road", "Clock Tower", "Ghanta Ghar", "Ballupur Chowk", "Paltan Bazaar", "Saharanpur Road", "Prem Nagar", "ISBT"];
 
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff" } });
+function cors(request, url) {
+  const origin = request.headers.get("origin");
+  const allowed = !origin || origin === url.origin || CORS_ORIGINS.has(origin);
+  const headers = { "vary": "Origin" };
+  if (origin && allowed) {
+    headers["access-control-allow-origin"] = origin;
+    headers["access-control-allow-methods"] = "GET, POST, OPTIONS";
+    headers["access-control-allow-headers"] = "content-type";
+    headers["access-control-max-age"] = "86400";
+  }
+  return { allowed, headers };
 }
 
-async function health(request, env) {
+function json(data, status = 200, extraHeaders = {}) {
+  return new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff", ...extraHeaders } });
+}
+
+function optionsResponse(headers) {
+  return new Response(null, { status: 204, headers });
+}
+
+async function health(request, env, url) {
+  const access = cors(request, url);
+  if (!access.allowed) return json({ success: false, message: "Cross-origin requests are not allowed." }, 403, access.headers);
+  if (request.method === "OPTIONS") return optionsResponse(access.headers);
   if (request.method !== "GET") return json({ success: false, message: "Method not allowed." }, 405);
-  return json({ success: true, configured: Boolean(env.GNANI_API_KEY), model: "prisma-v3.0" });
+  return json({ success: true, configured: Boolean(env.GNANI_API_KEY), model: "prisma-v3.0" }, 200, access.headers);
 }
 
 async function transcribe(request, env, url) {
+  const access = cors(request, url);
+  if (!access.allowed) return json({ success: false, message: "Cross-origin requests are not allowed." }, 403, access.headers);
+  if (request.method === "OPTIONS") return optionsResponse(access.headers);
   if (request.method !== "POST") return json({ success: false, message: "Method not allowed." }, 405);
-  const origin = request.headers.get("origin");
-  if (origin && origin !== url.origin) return json({ success: false, message: "Cross-origin requests are not allowed." }, 403);
-  if (!env.GNANI_API_KEY) return json({ success: false, message: "Gnani API secret is not configured." }, 503);
-  if (!(request.headers.get("content-type") || "").toLowerCase().startsWith("multipart/form-data")) return json({ success: false, message: "Upload a WAV audio file using multipart form data." }, 415);
+  if (!env.GNANI_API_KEY) return json({ success: false, message: "Gnani API secret is not configured." }, 503, access.headers);
+  if (!(request.headers.get("content-type") || "").toLowerCase().startsWith("multipart/form-data")) return json({ success: false, message: "Upload a WAV audio file using multipart form data." }, 415, access.headers);
 
   let incoming;
   try { incoming = await request.formData(); }
-  catch (_) { return json({ success: false, message: "The audio upload could not be read." }, 400); }
+  catch (_) { return json({ success: false, message: "The audio upload could not be read." }, 400, access.headers); }
   const audio = incoming.get("audio_file");
-  if (!audio || typeof audio.arrayBuffer !== "function") return json({ success: false, message: "Audio file is required." }, 400);
-  if (audio.size === 0) return json({ success: false, message: "The recording is empty." }, 400);
-  if (audio.size > MAX_AUDIO_BYTES) return json({ success: false, message: "Recording is too large. Keep it under 25 seconds." }, 413);
+  if (!audio || typeof audio.arrayBuffer !== "function") return json({ success: false, message: "Audio file is required." }, 400, access.headers);
+  if (audio.size === 0) return json({ success: false, message: "The recording is empty." }, 400, access.headers);
+  if (audio.size > MAX_AUDIO_BYTES) return json({ success: false, message: "Recording is too large. Keep it under 25 seconds." }, 413, access.headers);
 
   const upstreamForm = new FormData();
   upstreamForm.append("audio_file", audio, "crowdfix-report.wav");
@@ -53,15 +75,15 @@ async function transcribe(request, env, url) {
   try {
     upstream = await fetch(API_URL, { method: "POST", headers: { "X-API-Key-ID": env.GNANI_API_KEY }, body: upstreamForm });
   } catch (_) {
-    return json({ success: false, message: "Gnani's transcription service could not be reached. Try again shortly." }, 502);
+    return json({ success: false, message: "Gnani's transcription service could not be reached. Try again shortly." }, 502, access.headers);
   }
   let result;
   try { result = await upstream.json(); }
-  catch (_) { return json({ success: false, message: "Gnani returned an unreadable response." }, 502); }
+  catch (_) { return json({ success: false, message: "Gnani returned an unreadable response." }, 502, access.headers); }
   if (!upstream.ok || result?.success === false) {
     const providerMessage = result?.error?.message || result?.detail?.message || result?.message;
     const message = typeof providerMessage === "string" ? providerMessage.slice(0, 240) : "Gnani could not transcribe this clip.";
-    return json({ success: false, message, providerStatus: upstream.status }, upstream.status >= 400 && upstream.status < 600 ? upstream.status : 502);
+    return json({ success: false, message, providerStatus: upstream.status }, upstream.status >= 400 && upstream.status < 600 ? upstream.status : 502, access.headers);
   }
   return json({
     success: true,
@@ -70,13 +92,13 @@ async function transcribe(request, env, url) {
     detectedLanguage: result.detected_language_code || null,
     latencyMs: Number.isFinite(Number(result.end_to_end_latency)) ? Math.round(Number(result.end_to_end_latency) * 1000) : null,
     requestId: result.request_id || null
-  });
+  }, 200, access.headers);
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (url.pathname === "/api/health") return health(request, env);
+    if (url.pathname === "/api/health") return health(request, env, url);
     if (url.pathname === "/api/transcribe") return transcribe(request, env, url);
     if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method not allowed", { status: 405 });
     const asset = ASSETS[url.pathname] || (url.pathname === "/" ? ASSETS["/"] : null);
